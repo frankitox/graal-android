@@ -25,41 +25,61 @@ pushd library
 
 rm -rf ./tmp
 
-$GRAALVM_HOME/bin/native-image \
-    --report-unsupported-elements-at-runtime \
-    --initialize-at-build-time="$INITIALIZE_AT_BUILD_TIME" \
-    --no-fallback \
-    --no-server \
-    -H:CompilerBackend=llvm \
-    -H:+ExitAfterRelocatableImageWrite \
-    -H:+SharedLibrary \
-    -H:+AddAllCharsets \
-    -H:+ReportExceptionStackTraces \
-    -H:-DeadlockWatchdogExitOnTimeout \
-    -H:DeadlockWatchdogInterval=0 \
-    -H:+RemoveSaturatedTypeFlows \
-    -H:-SpawnIsolates \
-    -H:PageSize=16384 \
-    -Djdk.internal.lambda.eagerlyInitialize=false \
-    -H:+ReportExceptionStackTraces \
-    -H:TempDirectory="$PROJECT_DIR"/library/tmp \
-    -H:ReflectionConfigurationFiles="${PROJECT_DIR}"/conf/reflectionconfig-arm64-ios.json \
-    -H:JNIConfigurationFiles="${PROJECT_DIR}"/conf/jniconfig-arm64-ios.json \
-    -H:ResourceConfigurationFiles="${PROJECT_DIR}"/conf/resourceconfig-arm64-ios.json \
-    -J-Dclojure.spec.skip-macros=true \
-    -J-Xmx20G \
-    -J-XX:MaxDirectMemorySize=8G \
-    -J-Dclojure.compiler.direct-linking=true \
-    -J-Dtech.v3.datatype.graal-native=true \
-    -Dsvm.targetName=iOS \
-    -Dsvm.targetArch=arm64 \
-    -H:+UseCAPCache \
-    -H:CAPCacheDir="${PROJECT_DIR}"/conf/capcache \
-    '-Dsvm.platform=org.graalvm.nativeimage.Platform$IOS_AARCH64' \
-    -jar ../target/mobiletest-uber.jar
+# basic options https://www.graalvm.org/reference-manual/native-image/Options/#options-to-native-image-builder
+# -H: hosted options: configure a native image build, i.e., influence what is put into the image and how the image is built
 
-rm -rf ./build/out
-mkdir -p build/out
+$GRAALVM_HOME/bin/native-image \
+  --report-unsupported-elements-at-runtime `# membrane-only` \
+  --initialize-at-build-time="$INITIALIZE_AT_BUILD_TIME" \
+  --no-fallback `# membrane-only` \
+  --no-server \
+  -H:CompilerBackend=lir \
+  -H:+ExitAfterRelocatableImageWrite \
+  -H:+SharedLibrary \
+  -H:+AddAllCharsets \
+  -H:+ReportExceptionStackTraces \
+  -H:-DeadlockWatchdogExitOnTimeout \
+  -H:DeadlockWatchdogInterval=0 \
+  -H:+RemoveSaturatedTypeFlows \
+  -H:-SpawnIsolates \
+  -Djdk.internal.lambda.eagerlyInitialize=false \
+  -H:TempDirectory="$PROJECT_DIR"/library/tmp \
+  -H:ReflectionConfigurationFiles="${PROJECT_DIR}"/conf/reflectionconfig-aarch64-android.json \
+  -H:JNIConfigurationFiles="${PROJECT_DIR}"/conf/jniconfig-aarch64-android.json \
+  -H:ResourceConfigurationFiles="${PROJECT_DIR}"/conf/resourceconfig-aarch64-android.json \
+  -Dsvm.targetArch=aarch64 \
+  '-Dsvm.platform=org.graalvm.nativeimage.Platform$LINUX_AARCH64' \
+  -H:PageSize=16384 `# membrane-only` \
+  -J-Dclojure.spec.skip-macros=true `# membrane-only` \
+  -J-Xmx20G `# membrane-only` \
+  -J-XX:MaxDirectMemorySize=8G `# membrane-only` \
+  -J-Dclojure.compiler.direct-linking=true `# membrane-only` \
+  -J-Dtech.v3.datatype.graal-native=true `# membrane-only` \
+  -H:CAPCacheDir="${PROJECT_DIR}"/conf/capcache \
+  -H:+UseCAPCache \
+  -jar ../target/mobiletest-uber.jar
+
+# $GRAALVM_HOME/bin/native-image \
+#     --report-unsupported-elements-at-runtime \
+#     --no-fallback \
+#     -H:PageSize=16384 \
+#     -J-Dclojure.spec.skip-macros=true \
+#     -J-Xmx20G \
+#     -J-XX:MaxDirectMemorySize=8G \
+#     -J-Dclojure.compiler.direct-linking=true \
+#     -J-Dtech.v3.datatype.graal-native=true \
+#     -Dsvm.targetName=iOS \
+#     -Dsvm.targetArch=arm64 \
+#     '-Dsvm.platform=org.graalvm.nativeimage.Platform$IOS_AARCH64' \
+#     -jar ../target/mobiletest-uber.jar
+
+# native-image
+#   --features=org.graalvm.home.HomeFinderFeature
+#   -H:EnableURLProtocols=http,https
+#   -H:+ForceNoROSectionRelocations
+#   --libc=bionic
+#   -H:IncludeResourceBundles=com/sun/javafx/scene/control/skin/resources/controls,com/sun/javafx/scene/control/skin/resources/controls-nt,com.sun.javafx.tk.quantum.QuantumMessagesBundle
+#   -Dsvm.platform=org.graalvm.nativeimage.Platform$LINUX_AARCH64
 
 find ./tmp -name 'llvm.o' -exec cp {} build/out \;
 find ./tmp -name 'mobiletest-uber.o' -exec cp {} build/out \;
